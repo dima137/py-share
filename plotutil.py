@@ -36,7 +36,7 @@ def logPlotData(data, err, epsilon):
 
 
 
-def plotLimLog(e, f, fe, sigma=2.0, c=None, headw=0.2, arrowl=0.3, **kwargs):
+def plotLimLog(e, f, fe, sigma=2.0, c=None, headw=0.1, arrowl=0.2, **kwargs):
     """ 
     Usage: plot limits when value is less than sigma*error away from zero
     Comment: only works for log-log plots
