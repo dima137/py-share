@@ -15,6 +15,7 @@ def positive(a):
 def logPlotData(data, err, epsilon):
     """
     avoid negative values for the down errors on loglog plots
+    useful for systematic uncertainty ranges
     INPUT:
         data - data
         err - errors
@@ -36,45 +37,86 @@ def logPlotData(data, err, epsilon):
 
 
 
-def plotLimLog(e, f, fe, sigma=2.0, c=None, headw=0.1, arrowl=0.2, **kwargs):
+def plotLimLog(xs, fs, ferrs, sigma=2.0, 
+               headw=0.1, arrowl=0.35, epsilon=1.e-15, **kwargs):
     """ 
-    Usage: plot limits when value is less than sigma*error away from zero
-    Comment: only works for log-log plots
-    Input: e: array of x-values
-           f: array of y-values
-           fe: array of y-errors
-           sigma: plot limit if  f<sigma*fe
-           headw, arrowl: use to control size of errors
+    Plot limit when value is less than sigma*error away from zero
+    Input:
+        xs - array, x-values
+        fs - array, y-values
+        ferrs - array, y-errors
+        sigma - number, plot limit if  f[i] < sigma * ferrs[i]
+            Default: 2.
+        headw - number, the width of the arrow head relative to xs[i]
+                        and the hight of the arrow head relative to ys[i]
+            Default: 0.1
+        arrowl - number, the length of the arrow line relative to fs[i]
+            Default: 0.2
+        epsilon - number, smallest number, should be outside of the y range
+            Default: 1.e-15
+        **kwargs - arguments for pyplot.errobar function
+    Output:
+        plots errorbars
+        plots arrows
+        returns errorbars object - the same as output of pyplot.errorbars function
+
+    Comments:
+        only works for log-log plots
+
     Created: Anna Franckowiak and Dmitry Malyshev, SLAC, 03/20/2014
 
     """
 
-    epsilon = np.ones_like(f)*1e-10
-    f = np.array(f)
-    fe = np.array(fe)
-    e = np.array(e)
-    ul = f+fe*sigma
-    ul[fe*sigma<=f] = epsilon[fe*sigma<=f]
+    fs = np.array(fs)
+    ferrs = np.array(ferrs)
+    xs = np.array(xs)
+    upper_limits = fs + ferrs * sigma
 
-    f[fe*sigma>f] = epsilon[fe*sigma>f]
-    fe[fe*sigma>f] = epsilon[fe*sigma>f]
+    # find indices where the points are OK
+    point_inds = (ferrs * sigma <= fs)
+    upper_limits[point_inds] = epsilon
 
-    if c is None:
-        eerb = pyplot.errorbar(e, f, fe, ls='', **kwargs)
-    else:
-        eerb = pyplot.errorbar(e, f, fe, ls='', c=c, **kwargs)
+    # find the indices where the points have to be substituted with limits
+    lim_inds = (ferrs * sigma > fs)
+    fs[lim_inds] = epsilon
+    ferrs[lim_inds] = epsilon
 
-    c = eerb[0].get_color()
+    # plot error bars
+    errorbars = pyplot.errorbar(xs, fs, ferrs, ls='', **kwargs)
+    color = errorbars[0].get_color()
 
-    for u in range(len(ul)):
-        al = np.power(10,np.log10(ul[u])-arrowl)-ul[u]
-        alh = -al*headw
-        alw = e[u]*headw
+    # plot arrows
+    for i, ul in enumerate(upper_limits):
+        # parameters of the arrow
+        dx = 0
+        dy = ul * arrowl
+        #al = np.power(10,np.log10(ul[u])-arrowl)-ul[u]
+        alh = dy * headw
+        alw = xs[i] * headw
+
+        # bar at the top of the arrow
         delta = 0.5 * headw
-        x = e[u] * np.array([1 - delta, 1 + delta])
-        y = ul[u] * np.ones(2)
+        xx = xs[i] * np.array([1 - delta, 1 + delta])
+        yy = ul * np.ones(2)
 
-        pyplot.arrow(e[u],ul[u],0,al,shape='full', length_includes_head=True, head_width=alw, head_length=alh,edgecolor=c,facecolor=c)
-        pyplot.plot(x,y,c=c)
+        pyplot.arrow(xs[i], ul, dx, -dy, shape='full',
+                     length_includes_head=True, head_width=alw, head_length=alh,
+                     edgecolor=color, facecolor=color)
+        pyplot.plot(xx, yy, c=color)
     
-    return eerb
+    return errorbars
+
+if __name__ == '__main__':
+    xs = 10.**np.arange(0., 3., 0.2)
+    fs = xs**1.3
+    ferrs = xs
+    ferrs = ferrs[::-1]
+
+    pyplot.figure()
+
+    plotLimLog(xs, fs, ferrs, headw=0.1, arrowl=0.35, marker='s', color='r')
+    pyplot.xscale('log')
+    pyplot.yscale('log')
+    pyplot.ylim(10, 10**4.)
+    pyplot.show()
+    
