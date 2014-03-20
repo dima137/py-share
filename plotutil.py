@@ -1,3 +1,5 @@
+# utility plotting functions
+
 import numpy as np
 from matplotlib import pyplot
 
