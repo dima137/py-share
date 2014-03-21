@@ -38,7 +38,7 @@ def logPlotData(data, err, epsilon):
 
 
 def plotLimLog(xs, fs, ferrs, sigma=2.0, 
-               headw=0.1, arrowl=0.35, epsilon=1.e-15, **kwargs):
+               headw=0.1, arrowl=0.4, **kwargs):
     """ 
     Plot limit when value is less than sigma*error away from zero
     Input:
@@ -52,8 +52,6 @@ def plotLimLog(xs, fs, ferrs, sigma=2.0,
             Default: 0.1
         arrowl - number, the length of the arrow line relative to fs[i]
             Default: 0.2
-        epsilon - number, smallest number, should be outside of the y range
-            Default: 1.e-15
         **kwargs - arguments for pyplot.errobar function
     Output:
         plots errorbars
@@ -71,22 +69,22 @@ def plotLimLog(xs, fs, ferrs, sigma=2.0,
     ferrs = np.array(ferrs)
     xs = np.array(xs)
     upper_limits = fs + ferrs * sigma
+    all_inds = range(len(ferrs))
 
     # find indices where the points are OK
-    point_inds = (ferrs * sigma <= fs)
-    upper_limits[point_inds] = epsilon
-
+    pt_inds = [i for i in all_inds if ferrs[i] * sigma <= fs[i]]
+    
     # find the indices where the points have to be substituted with limits
-    lim_inds = (ferrs * sigma > fs)
-    fs[lim_inds] = epsilon
-    ferrs[lim_inds] = epsilon
-
+    lim_inds = [i for i in all_inds if ferrs[i] * sigma > fs[i]]
+    
     # plot error bars
-    errorbars = pyplot.errorbar(xs, fs, ferrs, ls='', **kwargs)
+    errorbars = pyplot.errorbar(xs[pt_inds], fs[pt_inds],
+                                ferrs[pt_inds], ls='', **kwargs)
     color = errorbars[0].get_color()
 
     # plot arrows
-    for i, ul in enumerate(upper_limits):
+    for i in lim_inds:
+        ul = upper_limits[i]
         # parameters of the arrow
         dx = 0
         dy = ul * arrowl
@@ -103,6 +101,9 @@ def plotLimLog(xs, fs, ferrs, sigma=2.0,
                      length_includes_head=True, head_width=alw, head_length=alh,
                      edgecolor=color, facecolor=color)
         pyplot.plot(xx, yy, c=color)
+
+        pyplot.xscale('log')
+        pyplot.yscale('log')
     
     return errorbars
 
